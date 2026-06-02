@@ -6,6 +6,20 @@ Headless DCDU texture streamer for **ToLiss A320 in X-Plane 12**, paired with
 a **Guition JC3248W535C** all-in-one ESP32-S3 + 3.5" 320×480 capacitive
 touch display showing the live DCDU.
 
+> ### ⚠️ Scope & tested configuration
+>
+> - **This has only been developed and tested with the ToLiss A320 on
+>   X-Plane 12.** It has *not* been tested with any other aircraft add-on.
+>   Other aircraft may work if you map their own DCDU/CPDLC commands (any
+>   X-Plane command string is valid), but you are on your own.
+> - **The only platform tested is Windows.** Pre-compiled plugin and
+>   firmware binaries are provided for Windows. Linux and macOS are *not*
+>   tested or released — if you want them, you must build and test them
+>   yourself (see [Building from source](#building-from-source)).
+> - **The only display board supported is the Guition JC3248W535C.** A
+>   generic ESP32-S3 path exists for development but is not the supported
+>   target.
+
 Two artefacts:
 
 - **`plugin/`** — `Plugin-XTE-DCDU` X-Plane 12 plugin. Locks onto the panel
@@ -22,87 +36,111 @@ Two artefacts:
 > plugin in the same install. Different TCP port, different command
 > namespace, different `XTE-DCDU:` log prefix.
 
-## Parts to get
+---
 
-To build a physical DCDU module you will need:
+# Build & use (start here)
 
-- **Display board** — Guition **JC3248W535C** all-in-one ESP32-S3 with
-  3.5" 320×480 capacitive touch display (AXS15231B QSPI panel). This is
-  the only board the firmware in `firmware/` targets.
-- **Front frame / bezel** — print [`3D Print Files/CDCU_Main_Panel.stl`](3D%20Print%20Files/CDCU_Main_Panel.stl)
-  from this repo. It is a modification of James Bennet's original DCDU
-  front frame, adjusted to fit the JC3248W535C and the eight push-buttons
-  on header P2. See [`3D Print Files/README.md`](3D%20Print%20Files/README.md)
-  for printing notes and attribution.
-- **Everything else** (rear shell, button caps, light plate, wiring,
-  hardware, full parts list) — from James Bennet's original DCDU post in
-  the *A320 Cockpit Builders* Facebook group:
-  <https://www.facebook.com/groups/817102292436795/permalink/2156310058516005/>
+This is the path for everyone who just wants a working DCDU module using the
+pre-compiled firmware. The steps are in order:
 
-Only the modified front frame is redistributed here; please respect
-James' original sharing terms for the rest of the parts.
+1. [Get the parts](#1-get-the-parts)
+2. [Build the physical hardware](#2-build-the-physical-hardware)
+3. [Flash the pre-compiled firmware](#3-flash-the-pre-compiled-firmware)
+4. [Connect it to Wi-Fi & give it a fixed IP](#4-connect-it-to-wi-fi--give-it-a-fixed-ip)
+5. [Install the plugin & configure X-Plane](#5-install-the-plugin--configure-x-plane)
 
-## Author
-
-Created and maintained by **David Rowlandson**.
-
-## License
-
-Copyright (C) 2026 David Rowlandson.
-
-Licensed under the **GNU General Public License v3.0 or later**
-(GPL-3.0-or-later). The full license text is in [`LICENSE`](LICENSE)
-(also provided as [`COPYING`](COPYING)); see [`COPYRIGHT`](COPYRIGHT)
-for the project notice and third-party attribution.
-
-The texture-finding heuristic in `plugin/src/texture_finder.{cpp,hpp}` is
-adapted from `waynepiekarski/XTextureExtractor` (Copyright (C) Wayne
-Piekarski, also GPLv3) — see file header for attribution.
-
-Firmware third-party credits and license notes:
-
-- Captive Wi-Fi portal uses `tzapu/WiFiManager` (MIT).
-- Display/graphics stack uses `lovyan03/LovyanGFX` (MIT AND BSD-2-Clause)
-  for the generic SPI path and `moononournation/Arduino_GFX` for the
-  JC3248W535 QSPI path.
-- JPEG decode uses `bodmer/TJpg_Decoder`.
-
-These components remain under their own upstream licenses; this repository's
-top-level license remains GPL-3.0-or-later for XTE-DCDU project code.
+Building the plugin or firmware *from source* is only needed if you are
+developing, contributing, or targeting an untested platform — it comes
+[later](#building-from-source) and is secondary to the steps above.
 
 ---
 
-## Quick install (pre-compiled)
+## 1. Get the parts
 
-> **Just want to run XTE-DCDU?** Download the pre-compiled release — no
-> compiler or toolchain required.
+| | |
+|---|---|
+| ![Front panel lit up in a simulated cockpit](Photos/pic2.jpg) | ![Construction — rear of the unit showing wiring](Photos/back.jpg) |
 
-Head to the
-[**Releases page**](https://github.com/rodavrow/plugin-xte-dcdu/releases/latest)
-and download the assets for the latest version.
+| Item | Notes |
+|------|-------|
+| Guition **JC3248W535C** | All-in-one board: ESP32-S3-N16R8, AXS15231B 3.5" 320×480 QSPI display, 8-pin P2 button header. This is the only board the firmware targets. |
+| 8 momentary push buttons (SPST, normally open) | Optional — the display works without them. See James Bennet's original Facebook post <https://www.facebook.com/groups/817102292436795/permalink/2156310058516005/> |
+| PB1.25 8-pin connector with wire | <https://www.amazon.de/dp/B0D33JCWM2> |
+| 3D-printed front frame | `CDCU_Main_Panel.stl` from [`3D Print Files/`](3D%20Print%20Files/). See [Enclosure / 3D-printed parts](#enclosure--3d-printed-parts) for attribution and print notes. |
+| USB-C cable + 5 V supply | For power; also used for the firmware flash. |
 
-### Installing the plugin (Windows)
+**Front frame / bezel** — print [`3D Print Files/CDCU_Main_Panel.stl`](3D%20Print%20Files/CDCU_Main_Panel.stl)
+from this repo. It is a modification of James Bennet's original DCDU front
+frame, adjusted to fit the JC3248W535C and the eight push-buttons on header
+P2. See [`3D Print Files/README.md`](3D%20Print%20Files/README.md) for
+printing notes and attribution.
 
-1. Download `win.xpl` and `xte-dcdu.cfg.example` from the release.
-2. Create the plugin folder in your X-Plane 12 install (if it does not already
-   exist) and copy the files in:
-   ```
-   X-Plane 12/Resources/plugins/Plugin-XTE-DCDU/
-   ├── 64/
-   │   └── win.xpl
-   └── xte-dcdu.cfg        ← rename from xte-dcdu.cfg.example, then edit
-   ```
-3. Edit `xte-dcdu.cfg`. At minimum set `esp32_host` (under `[output]`) to the
-   IP address shown on the ESP32 display after it connects to your network.
-4. Start X-Plane 12. The plugin logs `XTE-DCDU:` lines to `Log.txt` and
-   appears under the **Plugins** menu.
+**Everything else** (rear shell, button caps, light plate, wiring, hardware,
+full parts list) — from James Bennet's original DCDU post in the *A320
+Cockpit Builders* Facebook group:
+<https://www.facebook.com/groups/817102292436795/permalink/2156310058516005/>
 
-> Linux and macOS builds are not currently included in the release; see
-> [Building the plugin](#1-building-the-plugin) to compile for those platforms.
+Only the modified front frame is redistributed here; please respect James'
+original sharing terms for the rest of the parts.
 
-### Flashing the firmware (JC3248W535C)
+---
 
-1. Download `firmware-jc3248w535.bin` from the release.
+## 2. Build the physical hardware
+
+**Display + ESP32-S3 + PSRAM are all on-board** — there is nothing to wire
+on the display side. The AXS15231B panel is driven over an internal QSPI bus
+that is fixed in hardware; the firmware configures it automatically.
+
+Power & programming use a single connector:
+
+| Connector | Use                                               |
+|-----------|---------------------------------------------------|
+| USB-C     | 5 V power + serial console + flashing (CDC/JTAG). |
+
+### Button wiring (optional)
+
+The eight buttons on header **P2** are optional — the display works without
+them. Each button is a momentary SPST switch connected between the listed
+GPIO pin and **GND**. The firmware enables the internal pull-up on every pin
+and reads them active-low, so **no external resistors are needed**:
+
+```
+GPIO ────[ button ]──── GND
+```
+
+Pins are chosen to avoid the QSPI display bus.
+
+| P2 header | ESP32-S3 GPIO | Default ToLiss A320 command         | Physical label (example build) |
+|-----------|---------------|-------------------------------------|--------------------------------|
+| BTN0      | 5             | `AirbusFBW/CPDLC1/PageMinus`        | PGE−                           |
+| BTN1      | 6             | `AirbusFBW/CPDLC1/PagePlus`         | PGE+                           |
+| BTN2      | 7             | `AirbusFBW/CPDLC1/LSK1R`            | *(blank — right LSK upper)*    |
+| BTN3      | 15            | `AirbusFBW/CPDLC1/LSK2R`            | *(blank — right LSK lower)*    |
+| BTN4      | 16            | `AirbusFBW/CPDLC1/LSK2L`            | *(blank — left LSK lower)*     |
+| BTN5      | 46            | `AirbusFBW/CPDLC1/LSK1L`            | *(blank — left LSK upper)*     |
+| BTN6      | 9             | `AirbusFBW/CPDLC1/MessagePlus`      | MSG+                           |
+| BTN7      | 14            | `AirbusFBW/CPDLC1/MessageMinus`     | MSG−                           |
+| GND       | GND           | —                                   | Common return for all buttons  |
+
+![Pinout](Photos/JST1.25-8pin-pinout.png)
+
+> The BRT/DIM and PRINT button caps in the photo are decorative in this build
+> as per the original design by James Bennet.
+
+The button → command mapping above is the default; you set the actual
+commands in `xte-dcdu.cfg` later — see
+[Configuring button commands](#configuring-button-commands).
+
+---
+
+## 3. Flash the pre-compiled firmware
+
+> **Just want to run XTE-DCDU?** Use the pre-compiled release — no compiler
+> or toolchain required.
+
+1. Go to the
+   [**Releases page**](https://github.com/rodavrow/plugin-xte-dcdu/releases/latest)
+   and download `firmware-jc3248w535.bin`.
 2. Connect the board to your PC via USB-C.
 3. Install `esptool` and flash the binary:
 
@@ -116,303 +154,83 @@ and download the assets for the latest version.
    - **Linux** — `/dev/ttyUSB0` or `/dev/ttyACM0`
    - **macOS** — `/dev/cu.usbserial-*`
 
-4. On first boot the display shows the Wi-Fi setup screen. Follow the
-   [captive portal steps](#configure-wifi) to connect the device to your
-   network. The display shows the assigned IP address once connected.
-5. Set `esp32_host` in `xte-dcdu.cfg` to that IP address.
+4. On first boot the display shows the Wi-Fi setup screen. Continue to
+   [Connect it to Wi-Fi](#4-connect-it-to-wi-fi--give-it-a-fixed-ip).
 
 ---
 
-## Contributing
+## 4. Connect it to Wi-Fi & give it a fixed IP
 
-Contributions — bug fixes, new board support, improvements — are welcome.
-Please follow the standard GitHub fork-and-PR workflow:
+### How the Wi-Fi access point works
 
-1. **Open an issue first** for any non-trivial change so the approach can be
-   agreed before you write code.
-
-2. **Fork** the repository and clone your fork locally:
-   ```bash
-   git clone https://github.com/<your-username>/plugin-xte-dcdu.git
-   cd plugin-xte-dcdu
-   git remote add upstream https://github.com/rodavrow/plugin-xte-dcdu.git
-   ```
-
-3. **Create a branch** from `main` with a descriptive prefix:
-   ```bash
-   git checkout -b fix/tcp-reconnect-on-drop   # or feat/ or docs/
-   ```
-
-4. Make and test your changes. Changes to the wire protocol (Section 4) must
-   include matching updates on both the plugin and firmware sides.
-
-5. **Commit** with a clear message; one logical change per commit:
-   ```bash
-   git commit -m "fix: correct TCP reconnect when client drops"
-   ```
-
-6. **Rebase** against upstream `main` before opening a PR:
-   ```bash
-   git fetch upstream
-   git rebase upstream/main
-   ```
-
-7. **Push** your branch and **open a pull request** against `main`:
-   ```bash
-   git push origin fix/tcp-reconnect-on-drop
-   ```
-   Describe *what* changed, *why*, and how you tested it.
-
----
-
-## 1. Building the plugin
-
-> **For developers and contributors only.** If you just want to run
-> XTE-DCDU, download the pre-built release instead — see
-> [Quick install](#quick-install-pre-compiled) above.
-
-### Prerequisites
-
-- A C++17 toolchain.
-- CMake >= 3.16.
-- The X-Plane SDK (CHeaders + per-OS libraries) unpacked at
-  `plugin/XPLM/` such that `plugin/XPLM/CHeaders/XPLM/XPLMDefs.h` exists.
-  See `plugin/XPLM/README.md`.
-- `xxhash.h` from https://github.com/Cyan4973/xxHash placed at
-  `plugin/third_party/xxhash/xxhash.h`. See `plugin/third_party/xxhash/README.md`.
-- libjpeg-turbo is fetched automatically by CMake `FetchContent`.
-
-### Windows (Visual Studio 2022, x64)
-
-```powershell
-cd plugin
-cmake -S . -B build -A x64
-cmake --build build --config Release
-```
-
-Output: `plugin/build/Release/win.xpl`.
-
-### Linux (GCC, x86_64)
-
-```bash
-cd plugin
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
-```
-
-Output: `plugin/build/lin.xpl`.
-
-### macOS (Xcode / Clang, universal optional)
-
-```bash
-cd plugin
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
-```
-
-Output: `plugin/build/mac.xpl` (as a bundle). Codesign before distribution.
-
-### Install layout
-
-Copy into your X-Plane install:
-
-```
-X-Plane 12/Resources/plugins/Plugin-XTE-DCDU/
-├── 64/
-│   ├── win.xpl
-│   ├── lin.xpl
-│   └── mac.xpl
-└── xte-dcdu.cfg            (copied from xte-dcdu.cfg.example, edited)
-```
-
-`cmake --install build --prefix <X-Plane 12>/Resources/plugins` will do the
-same.
-
----
-
-## 2. Building / flashing the firmware
-
-> **For developers and contributors only.** To flash a pre-built firmware
-> binary without installing PlatformIO, see
-> [Flashing the firmware](#flashing-the-firmware-jc3248w535c) above.
-
-The firmware targets the **Guition JC3248W535C** all-in-one board by
-default: ESP32-S3-N16R8 + AXS15231B 3.5" 320×480 QSPI capacitive touch
-LCD + 8-pin button header (P2). No external display wiring is required —
-just USB-C for power/programming and (optionally) momentary buttons on P2.
-
-### Prerequisites
-
-- [PlatformIO Core](https://platformio.org/install/cli) (or the VS Code
-  extension).
-- A Guition **JC3248W535C** board and a USB-C cable.
-- *(Optional)* Up to 8 momentary push-buttons wired to the P2 header (see
-  pinout below). Buttons are not required for the display to work.
-
-### Configure WiFi
-
-On first boot (or whenever the saved network cannot be reached) the firmware starts an
-open access point named **`XTE-DCDU-Setup`** and serves a captive portal:
+On first boot — or whenever the saved network cannot be reached — the
+firmware starts its own **open access point** named **`XTE-DCDU-Setup`** and
+serves a captive portal:
 
 1. On your phone or laptop, join the Wi-Fi network **`XTE-DCDU-Setup`**.
 2. The captive portal should open automatically; if not, browse to
    `http://192.168.4.1/`.
 3. Pick your home SSID, enter the passphrase, and press **Save**.
-4. The ESP32 stores the credentials in NVS and reboots into normal station
-   mode. The portal will not appear again unless the network becomes
-   unreachable.
+4. The ESP32 stores the credentials in NVS (non-volatile storage) and reboots
+   into normal station mode. The portal will **not** appear again unless the
+   network later becomes unreachable.
 
-To force the portal on a device that already has saved credentials, **hold
-BTN0** (GPIO 5 on the JC3248W535C P2 header) at power-on for at least 3
-seconds. The display shows the setup screen while the portal is active.
+To force the portal back on a device that already has saved credentials,
+**hold BTN0** (GPIO 5 on the P2 header) at power-on for at least 3 seconds.
+The display shows the setup screen while the portal is active.
 
 The captive portal is powered by
 [`tzapu/WiFiManager`](https://github.com/tzapu/WiFiManager) (MIT).
 
-#### Optional: OTA upload password
+Once connected, **the display shows the assigned IP address and listening
+port** — you will need the IP address in the next step.
 
-`firmware/credentials.ini` is the only build-time secret file now (git-
-ignored). It only needs to exist if you want to password-protect OTA uploads:
+### ⚠️ Assign a permanent (static) IP in your router
 
-```ini
-[credentials]
-ota_password = your_ota_password   ; leave blank (default) to disable OTA auth
-```
+By default the device gets its address from your router via DHCP, which can
+hand out a **different IP after a reboot or lease expiry**. If that happens,
+the IP you put in `xte-dcdu.cfg` no longer matches the device and the plugin
+can't connect.
 
-Copy `firmware/credentials.ini.example` to `firmware/credentials.ini` and
-fill in the password. If the file is absent, the empty default in
-`platformio.ini` is used and OTA auth is disabled.
-
-### Build & flash
-
-The default environment is `jc3248w535`, so no `-e` is needed:
-
-```bash
-cd firmware
-pio run -t upload          # USB-C flash
-pio device monitor         # 115200 baud
-```
-
-Once running on the LAN you can update over the air:
-
-```bash
-pio run -e jc3248w535_ota -t upload
-```
-
-On boot the display shows the assigned IP address and listening port. Set
-the plugin's `esp32_host` / `esp32_port` to match.
-
-### JC3248W535C wiring
-
-**Display + ESP32-S3 + PSRAM are all on-board** — nothing to wire there.
-The AXS15231B panel is driven over an internal QSPI bus that is fixed in
-hardware; the firmware configures it automatically when built for this
-board (`-DBOARD_JC3248W535`, set by the `jc3248w535` env).
-
-Power & programming:
-
-| Connector | Use                                               |
-|-----------|---------------------------------------------------|
-| USB-C     | 5 V power + serial console + flashing (CDC/JTAG). |
-
-**P2 header — 8 user buttons (optional).** Each button is a momentary
-SPST switch connected between the listed GPIO and GND. The firmware
-enables internal pull-ups and reads them active-low, so no external
-resistors are required. Pins are chosen to avoid the QSPI display bus.
-
-| P2 pin | ESP32-S3 GPIO | Default action sent to plugin |
-|--------|---------------|-------------------------------|
-| BTN0   | GPIO 5        | `xtedcdu/btn/0`               |
-| BTN1   | GPIO 6        | `xtedcdu/btn/1`               |
-| BTN2   | GPIO 7        | `xtedcdu/btn/2`               |
-| BTN3   | GPIO 15       | `xtedcdu/btn/3`               |
-| BTN4   | GPIO 16       | `xtedcdu/btn/4`               |
-| BTN5   | GPIO 46       | `xtedcdu/btn/5`               |
-| BTN6   | GPIO 9        | `xtedcdu/btn/6`               |
-| BTN7   | GPIO 14       | `xtedcdu/btn/7`               |
-| GND    | GND           | Common return for all buttons |
-
-Wiring a button is just `GPIO ────[ button ]──── GND`. Pins are
-overridable at build time via `-DBTN_PIN_N=xx` flags in `platformio.ini`.
-
-### Other ESP32-S3 boards
-
-A generic `esp32s3` environment is also provided for an
-ESP32-S3-DevKitC-1 driving an external ILI9341 SPI TFT, kept around for
-development. Build it with `pio run -e esp32s3 -t upload`. Wiring is in
-[`firmware/include/config.h`](firmware/include/config.h) (TFT_CS=10,
-TFT_DC=11, TFT_RST=14, TFT_MOSI=13, TFT_SCK=12, TFT_MISO=9, TFT_BL
-optional). The JC3248W535C path is the supported one.
+**Reserve a fixed IP for the device in your router** (usually called a "DHCP
+reservation" or "static lease", bound to the ESP32's MAC address). This keeps
+the address stable so the plugin always finds the device. Set `esp32_host`
+in `xte-dcdu.cfg` to that reserved address.
 
 ---
 
-## 3. Enclosure / 3D-printed parts
+## 5. Install the plugin & configure X-Plane
 
-The [`3D Print Files/`](3D%20Print%20Files/) folder contains the printable
-front frame for the DCDU module:
+> Pre-compiled plugin builds are provided for **Windows only**. For Linux or
+> macOS you must [build from source](#building-the-plugin-from-source) and
+> test it yourself.
 
-- **`CDCU_Main_Panel.stl`** — front frame / bezel sized for the
-  JC3248W535C display and the 8 buttons on its P2 header.
+1. From the
+   [**Releases page**](https://github.com/rodavrow/plugin-xte-dcdu/releases/latest),
+   download `win.xpl` and `xte-dcdu.cfg.example`.
+2. Create the plugin folder in your X-Plane 12 install (if it does not already
+   exist) and copy the files in:
 
-This frame is a **modification of James Bennet's original DCDU front
-frame design**, shared in the *A320 Cockpit Builders* Facebook group.
-All credit for the original geometry goes to James; this fork only
-adjusts the display cut-out, button positions and mounting bosses for
-the JC3248W535C.
+   ```
+   X-Plane 12/Resources/plugins/Plugin-XTE-DCDU/
+   ├── 64/
+   │   └── win.xpl
+   └── xte-dcdu.cfg        ← rename from xte-dcdu.cfg.example, then edit
+   ```
 
-The original post contains the full parts list and the rest of the STLs
-you will need for a complete DCDU module (rear shell, button caps, light
-plate, etc.):
-
-- <https://www.facebook.com/groups/817102292436795/permalink/2156310058516005/>
-
-See [`3D Print Files/README.md`](3D%20Print%20Files/README.md) for print
-settings and attribution detail.
-
----
-
-## 4. Building the hardware
-
-| | |
-|---|---|
-| ![Front panel lit up in a simulated cockpit](Photos/pic2.jpg) | ![Construction — rear of the unit showing wiring](Photos/back.jpg) |
-
-### Parts list
-
-| Item | Notes |
-|------|-------|
-| Guition JC3248W535C | All-in-one board: ESP32-S3-N16R8, AXS15231B 3.5" 320×480 QSPI display, 8-pin P2 button header. |
-| Up to 8 momentary push buttons (SPST, normally open) | See James Bennet's original Facebook post <https://www.facebook.com/groups/817102292436795/permalink/2156310058516005/> |
-| PB1.25 8 pin connector with wire | https://www.amazon.de/dp/B0D33JCWM2 |
-| 3D-printed front frame | `CDCU_Main_Panel.stl` from [`3D Print Files/`](3D%20Print%20Files/). See [Section 3](#3-enclosure--3d-printed-parts) for attribution and print notes. |
-| USB-C cable + 5 V supply | For power; also used for the initial firmware flash. |
-
-### Button wiring
-
-Each button connects between one of the P2 header GPIO pins and **GND**.
-The firmware enables the internal pull-up on every pin, so no external
-resistors are needed: `GPIO ────[ button ]──── GND`.
-
-| P2 header | GPIO | Toliss A320 command | Physical label (example build) |
-|-----------|------|---------------------|--------------------------------|
-| BTN0 | 5 | `AirbusFBW/CPDLC1/PageMinus` | PGE− |
-| BTN1 | 6 | `AirbusFBW/CPDLC1/PagePlus` | PGE+ |
-| BTN2 | 7 | `AirbusFBW/CPDLC1/LSK1R` | *(blank — right LSK upper)* |
-| BTN3 | 15 | `AirbusFBW/CPDLC1/LSK2R` | PRINT |
-| BTN4 | 16 | `AirbusFBW/CPDLC1/LSK2L` | *(blank — left LSK lower)* |
-| BTN5 | 46 | `AirbusFBW/CPDLC1/LSK1L` | *(blank — left LSK upper)* |
-| BTN6 | 9 | `AirbusFBW/CPDLC1/MessagePlus` | MSG+ |
-| BTN7 | 14 | `AirbusFBW/CPDLC1/MessageMinus` | MSG− |
-| GND | GND | — | Common return for all buttons |
-
-![Pinout](Photos/JST1.25-8pin-pinout.png)
-
-> The BRT/DIM and PRINT button caps in the photo are decorative in this build as per orginal design by James Bennet.
+3. Edit `xte-dcdu.cfg`. At minimum, set `esp32_host` (under `[output]`) to the
+   **fixed IP address** you reserved for the device in
+   [step 4](#4-connect-it-to-wi-fi--give-it-a-fixed-ip). Set `esp32_port` to
+   match the port shown on the display.
+4. Start X-Plane 12 and load the ToLiss A320. The plugin logs `XTE-DCDU:`
+   lines to `Log.txt` and appears under the **Plugins** menu. The DCDU should
+   appear on the display once the aircraft is loaded.
 
 ### Configuring button commands
 
-Button commands are mapped in `xte-dcdu.cfg` (placed next to the plugin
-`.xpl` file). Each section corresponds to a button index:
+If you fitted the optional P2 buttons, their commands are mapped in
+`xte-dcdu.cfg` (placed next to the plugin `.xpl` file). Each section
+corresponds to a button index:
 
 ```ini
 [button.0]
@@ -448,14 +266,228 @@ type    = command
 command = AirbusFBW/CPDLC1/MessageMinus
 ```
 
-These are the Toliss A319/A320/A321 commands. Adapt them to your aircraft
-add-on — any X-Plane command string is valid. Reload the mapping at
-runtime with the `xtedcdu/reload_config` command without restarting
-X-Plane.
+These are the ToLiss A319/A320/A321 commands. Only the ToLiss A320 has been
+tested. Adapt them to your aircraft add-on if you wish — any X-Plane command
+string is valid, but other aircraft are untested. Reload the mapping at
+runtime with the `xtedcdu/reload_config` command without restarting X-Plane.
 
 ---
 
-## 5. Wire format
+## Enclosure / 3D-printed parts
+
+The [`3D Print Files/`](3D%20Print%20Files/) folder contains the printable
+front frame for the DCDU module:
+
+- **`CDCU_Main_Panel.stl`** — front frame / bezel sized for the
+  JC3248W535C display and the 8 buttons on its P2 header.
+
+This frame is a **modification of James Bennet's original DCDU front
+frame design**, shared in the *A320 Cockpit Builders* Facebook group.
+All credit for the original geometry goes to James; this fork only
+adjusts the display cut-out and mounting bosses for
+the JC3248W535C.
+
+The original post contains the full parts list and the rest of the STLs
+you will need for a complete DCDU module (rear shell, button caps, light
+plate, etc.):
+
+- <https://www.facebook.com/groups/817102292436795/permalink/2156310058516005/>
+
+See [`3D Print Files/README.md`](3D%20Print%20Files/README.md) for print
+settings and attribution detail.
+
+---
+
+# Building from source
+
+> **For developers and contributors only.** If you just want a working DCDU
+> module, use the pre-compiled release and follow
+> [Build & use](#build--use-start-here) above. Everything below is secondary
+> to that.
+>
+> Reminder: only **Windows** is tested. Linux and macOS build recipes are
+> provided as a starting point, but you must build and test them yourself.
+
+## Building the plugin from source
+
+### Prerequisites
+
+- A C++17 toolchain.
+- CMake >= 3.16.
+- The X-Plane SDK (CHeaders + per-OS libraries) unpacked at
+  `plugin/XPLM/` such that `plugin/XPLM/CHeaders/XPLM/XPLMDefs.h` exists.
+  See `plugin/XPLM/README.md`.
+- `xxhash.h` from <https://github.com/Cyan4973/xxHash> placed at
+  `plugin/third_party/xxhash/xxhash.h`. See `plugin/third_party/xxhash/README.md`.
+- libjpeg-turbo is fetched automatically by CMake `FetchContent`.
+
+### Windows (Visual Studio 2022, x64) — tested
+
+```powershell
+cd plugin
+cmake -S . -B build -A x64
+cmake --build build --config Release
+```
+
+Output: `plugin/build/Release/win.xpl`.
+
+### Linux (GCC, x86_64) — untested, build & test yourself
+
+```bash
+cd plugin
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+```
+
+Output: `plugin/build/lin.xpl`.
+
+### macOS (Xcode / Clang, universal optional) — untested, build & test yourself
+
+```bash
+cd plugin
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j
+```
+
+Output: `plugin/build/mac.xpl` (as a bundle). Codesign before distribution.
+
+### Install layout
+
+Copy into your X-Plane install:
+
+```
+X-Plane 12/Resources/plugins/Plugin-XTE-DCDU/
+├── 64/
+│   ├── win.xpl
+│   ├── lin.xpl
+│   └── mac.xpl
+└── xte-dcdu.cfg            (copied from xte-dcdu.cfg.example, edited)
+```
+
+`cmake --install build --prefix <X-Plane 12>/Resources/plugins` will do the
+same.
+
+## Building / flashing the firmware from source
+
+> To flash a pre-built firmware binary without installing PlatformIO, see
+> [Flash the pre-compiled firmware](#3-flash-the-pre-compiled-firmware) above.
+
+The firmware targets the **Guition JC3248W535C** all-in-one board by
+default: ESP32-S3-N16R8 + AXS15231B 3.5" 320×480 QSPI capacitive touch
+LCD + 8-pin button header (P2). No external display wiring is required —
+just USB-C for power/programming and (optionally) momentary buttons on P2.
+
+### Prerequisites
+
+- [PlatformIO Core](https://platformio.org/install/cli) (or the VS Code
+  extension).
+- A Guition **JC3248W535C** board and a USB-C cable.
+- *(Optional)* Up to 8 momentary push-buttons wired to the P2 header (see
+  [Button wiring](#button-wiring-optional)). Buttons are not required for
+  the display to work.
+
+### Optional: OTA upload password
+
+`firmware/credentials.ini` is the only build-time secret file (git-ignored).
+It only needs to exist if you want to password-protect OTA uploads:
+
+```ini
+[credentials]
+ota_password = your_ota_password   ; leave blank (default) to disable OTA auth
+```
+
+Copy `firmware/credentials.ini.example` to `firmware/credentials.ini` and
+fill in the password. If the file is absent, the empty default in
+`platformio.ini` is used and OTA auth is disabled.
+
+### Build & flash
+
+The default environment is `jc3248w535`, so no `-e` is needed:
+
+```bash
+cd firmware
+pio run -t upload          # USB-C flash
+pio device monitor         # 115200 baud
+```
+
+Once running on the LAN you can update over the air:
+
+```bash
+pio run -e jc3248w535_ota -t upload
+```
+
+On boot the display shows the assigned IP address and listening port. Set
+the plugin's `esp32_host` / `esp32_port` to match (and reserve a static IP
+for the device — see
+[step 4](#4-connect-it-to-wi-fi--give-it-a-fixed-ip)).
+
+### JC3248W535C wiring (build-time detail)
+
+**Display + ESP32-S3 + PSRAM are all on-board** — nothing to wire there.
+The AXS15231B panel is driven over an internal QSPI bus fixed in hardware;
+the firmware configures it automatically when built for this board
+(`-DBOARD_JC3248W535`, set by the `jc3248w535` env). For the P2 button
+pinout see [Button wiring](#button-wiring-optional). Button pins are
+overridable at build time via `-DBTN_PIN_N=xx` flags in `platformio.ini`.
+
+### Other ESP32-S3 boards (development only, untested)
+
+A generic `esp32s3` environment is also provided for an
+ESP32-S3-DevKitC-1 driving an external ILI9341 SPI TFT, kept around for
+development. Build it with `pio run -e esp32s3 -t upload`. Wiring is in
+[`firmware/include/config.h`](firmware/include/config.h) (TFT_CS=10,
+TFT_DC=11, TFT_RST=14, TFT_MOSI=13, TFT_SCK=12, TFT_MISO=9, TFT_BL
+optional). **The JC3248W535C path is the only supported one;** this generic
+path is untested and provided as-is.
+
+---
+
+## Contributing
+
+Contributions — bug fixes, new board support, improvements — are welcome.
+Please follow the standard GitHub fork-and-PR workflow:
+
+1. **Open an issue first** for any non-trivial change so the approach can be
+   agreed before you write code.
+
+2. **Fork** the repository and clone your fork locally:
+   ```bash
+   git clone https://github.com/<your-username>/plugin-xte-dcdu.git
+   cd plugin-xte-dcdu
+   git remote add upstream https://github.com/rodavrow/plugin-xte-dcdu.git
+   ```
+
+3. **Create a branch** from `main` with a descriptive prefix:
+   ```bash
+   git checkout -b fix/tcp-reconnect-on-drop   # or feat/ or docs/
+   ```
+
+4. Make and test your changes. Changes to the wire protocol
+   ([Wire format](#wire-format)) must include matching updates on both the
+   plugin and firmware sides.
+
+5. **Commit** with a clear message; one logical change per commit:
+   ```bash
+   git commit -m "fix: correct TCP reconnect when client drops"
+   ```
+
+6. **Rebase** against upstream `main` before opening a PR:
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
+
+7. **Push** your branch and **open a pull request** against `main`:
+   ```bash
+   git push origin fix/tcp-reconnect-on-drop
+   ```
+   Describe *what* changed, *why*, and how you tested it.
+
+---
+
+# Reference
+
+## Wire format
 
 All multi-byte fields **little-endian**.
 
@@ -494,9 +526,7 @@ nc -l 4711 | xxd | head -50
 The first frame after aircraft load should show `44 43 44 55 01 ...` followed
 by a JPEG starting with `FF D8 FF`.
 
----
-
-## 6. Plugin commands and datarefs
+## Plugin commands and datarefs
 
 ### Commands
 
@@ -513,9 +543,7 @@ by a JPEG starting with `FF D8 FF`.
 - `xtedcdu/status/frames_skipped_nochange` — counter (incl. rate-limit drops)
 - `xtedcdu/status/last_send_error`         — errno of last failed send, 0 if clean
 
----
-
-## 7. Troubleshooting / log line reference
+## Troubleshooting / log line reference
 
 Every plugin log line is prefixed `XTE-DCDU: `. Notable messages:
 
@@ -538,14 +566,16 @@ Every plugin log line is prefixed `XTE-DCDU: `. Notable messages:
 | `worker: started` / `worker: stopped` | worker thread lifecycle |
 | `dump: wrote N bytes to ...` | `xtedcdu/dump_frame` succeeded |
 
+If the device keeps becoming unreachable after a reboot, check that you have
+[reserved a static IP](#4-connect-it-to-wi-fi--give-it-a-fixed-ip) for it in
+your router — DHCP handing out a new address is the most common cause.
+
 If the FPS counter changes when the plugin is enabled, check
 `sim/operation/misc/frame_rate_period`. If you see a regression, set
 `pbo_count = 1` in the config to confirm it's the async readback path
 (should make things worse, not better — that's the "control" run).
 
----
-
-## 8. Repository layout
+## Repository layout
 
 ```
 xte-dcdu/
@@ -570,7 +600,7 @@ xte-dcdu/
 └── README.md
 ```
 
-## 9. Known limitations / future work
+## Known limitations / future work
 
 - v1.0 supports a single `[aircraft]` section. Multi-aircraft via section
   suffixes (`[aircraft.a319]`, `[window.a319]`, …) is reserved for v1.1.
@@ -581,3 +611,33 @@ xte-dcdu/
 - Firmware OTA is enabled (`xte-dcdu` hostname). Auth is disabled by default;
   set `ota_password` in `credentials.ini` to enable it. Either way, keep the
   device on a trusted LAN.
+
+---
+
+## Author
+
+Created and maintained by **David Rowlandson**.
+
+## License
+
+Copyright (C) 2026 David Rowlandson.
+
+Licensed under the **GNU General Public License v3.0 or later**
+(GPL-3.0-or-later). The full license text is in [`LICENSE`](LICENSE)
+(also provided as [`COPYING`](COPYING)); see [`COPYRIGHT`](COPYRIGHT)
+for the project notice and third-party attribution.
+
+The texture-finding heuristic in `plugin/src/texture_finder.{cpp,hpp}` is
+adapted from `waynepiekarski/XTextureExtractor` (Copyright (C) Wayne
+Piekarski, also GPLv3) — see file header for attribution.
+
+Firmware third-party credits and license notes:
+
+- Captive Wi-Fi portal uses `tzapu/WiFiManager` (MIT).
+- Display/graphics stack uses `lovyan03/LovyanGFX` (MIT AND BSD-2-Clause)
+  for the generic SPI path and `moononournation/Arduino_GFX` for the
+  JC3248W535 QSPI path.
+- JPEG decode uses `bodmer/TJpg_Decoder`.
+
+These components remain under their own upstream licenses; this repository's
+top-level license remains GPL-3.0-or-later for XTE-DCDU project code.
