@@ -381,9 +381,9 @@ settings and attribution detail.
 
 | Item | Notes |
 |------|-------|
-| [Guition JC3248W535C](https://www.guition.com/products/esp32-s3-3-5-inch-capacitive-touch-screen-module) | All-in-one board: ESP32-S3-N16R8, AXS15231B 3.5" 320×480 QSPI display, 8-pin P2 button header. |
-| Up to 8 momentary push buttons (SPST, normally open) | Illuminated or standard, any travel. |
-| Wire | Short runs; 26–28 AWG silicone works well. |
+| Guition JC3248W535C | All-in-one board: ESP32-S3-N16R8, AXS15231B 3.5" 320×480 QSPI display, 8-pin P2 button header. |
+| Up to 8 momentary push buttons (SPST, normally open) | See James Bennet's original Facebook post <https://www.facebook.com/groups/817102292436795/permalink/2156310058516005/> |
+| PB1.25 8 pin connector with wire | https://www.amazon.de/dp/B0D33JCWM2 |
 | 3D-printed front frame | `CDCU_Main_Panel.stl` from [`3D Print Files/`](3D%20Print%20Files/). See [Section 3](#3-enclosure--3d-printed-parts) for attribution and print notes. |
 | USB-C cable + 5 V supply | For power; also used for the initial firmware flash. |
 
@@ -405,9 +405,9 @@ resistors are needed: `GPIO ────[ button ]──── GND`.
 | BTN7 | 14 | `AirbusFBW/CPDLC1/MessageMinus` | MSG− |
 | GND | GND | — | Common return for all buttons |
 
-> The BRT/DIM button cap in the photo is decorative in this build — the
-> display brightness is fixed in firmware. Wire it to a spare BTN pin and
-> assign a command in `xte-dcdu.cfg` if you want it functional.
+![Pinout](Photos/JST1.25-8pin-pinout.png)
+
+> The BRT/DIM and PRINT button caps in the photo are decorative in this build as per orginal design by James Bennet.
 
 ### Configuring button commands
 
