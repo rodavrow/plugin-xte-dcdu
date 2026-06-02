@@ -371,7 +371,91 @@ settings and attribution detail.
 
 ---
 
-## 4. Wire format
+## 4. Building the hardware
+
+| | |
+|---|---|
+| ![Front panel lit up in a simulated cockpit](Photos/pic2.jpg) | ![Construction — rear of the unit showing wiring](Photos/back.jpg) |
+
+### Parts list
+
+| Item | Notes |
+|------|-------|
+| [Guition JC3248W535C](https://www.guition.com/products/esp32-s3-3-5-inch-capacitive-touch-screen-module) | All-in-one board: ESP32-S3-N16R8, AXS15231B 3.5" 320×480 QSPI display, 8-pin P2 button header. |
+| Up to 8 momentary push buttons (SPST, normally open) | Illuminated or standard, any travel. |
+| Wire | Short runs; 26–28 AWG silicone works well. |
+| 3D-printed front frame | `CDCU_Main_Panel.stl` from [`3D Print Files/`](3D%20Print%20Files/). See [Section 3](#3-enclosure--3d-printed-parts) for attribution and print notes. |
+| USB-C cable + 5 V supply | For power; also used for the initial firmware flash. |
+
+### Button wiring
+
+Each button connects between one of the P2 header GPIO pins and **GND**.
+The firmware enables the internal pull-up on every pin, so no external
+resistors are needed: `GPIO ────[ button ]──── GND`.
+
+| P2 header | GPIO | Toliss A320 command | Physical label (example build) |
+|-----------|------|---------------------|--------------------------------|
+| BTN0 | 5 | `AirbusFBW/CPDLC1/PageMinus` | PGE− |
+| BTN1 | 6 | `AirbusFBW/CPDLC1/PagePlus` | PGE+ |
+| BTN2 | 7 | `AirbusFBW/CPDLC1/LSK1R` | *(blank — right LSK upper)* |
+| BTN3 | 15 | `AirbusFBW/CPDLC1/LSK2R` | PRINT |
+| BTN4 | 16 | `AirbusFBW/CPDLC1/LSK2L` | *(blank — left LSK lower)* |
+| BTN5 | 46 | `AirbusFBW/CPDLC1/LSK1L` | *(blank — left LSK upper)* |
+| BTN6 | 9 | `AirbusFBW/CPDLC1/MessagePlus` | MSG+ |
+| BTN7 | 14 | `AirbusFBW/CPDLC1/MessageMinus` | MSG− |
+| GND | GND | — | Common return for all buttons |
+
+> The BRT/DIM button cap in the photo is decorative in this build — the
+> display brightness is fixed in firmware. Wire it to a spare BTN pin and
+> assign a command in `xte-dcdu.cfg` if you want it functional.
+
+### Configuring button commands
+
+Button commands are mapped in `xte-dcdu.cfg` (placed next to the plugin
+`.xpl` file). Each section corresponds to a button index:
+
+```ini
+[button.0]
+type    = command
+command = AirbusFBW/CPDLC1/PageMinus
+
+[button.1]
+type    = command
+command = AirbusFBW/CPDLC1/PagePlus
+
+[button.2]
+type    = command
+command = AirbusFBW/CPDLC1/LSK1R
+
+[button.3]
+type    = command
+command = AirbusFBW/CPDLC1/LSK2R
+
+[button.4]
+type    = command
+command = AirbusFBW/CPDLC1/LSK2L
+
+[button.5]
+type    = command
+command = AirbusFBW/CPDLC1/LSK1L
+
+[button.6]
+type    = command
+command = AirbusFBW/CPDLC1/MessagePlus
+
+[button.7]
+type    = command
+command = AirbusFBW/CPDLC1/MessageMinus
+```
+
+These are the Toliss A319/A320/A321 commands. Adapt them to your aircraft
+add-on — any X-Plane command string is valid. Reload the mapping at
+runtime with the `xtedcdu/reload_config` command without restarting
+X-Plane.
+
+---
+
+## 5. Wire format
 
 All multi-byte fields **little-endian**.
 
@@ -412,7 +496,7 @@ by a JPEG starting with `FF D8 FF`.
 
 ---
 
-## 5. Plugin commands and datarefs
+## 6. Plugin commands and datarefs
 
 ### Commands
 
@@ -431,7 +515,7 @@ by a JPEG starting with `FF D8 FF`.
 
 ---
 
-## 6. Troubleshooting / log line reference
+## 7. Troubleshooting / log line reference
 
 Every plugin log line is prefixed `XTE-DCDU: `. Notable messages:
 
@@ -461,7 +545,7 @@ If the FPS counter changes when the plugin is enabled, check
 
 ---
 
-## 7. Repository layout
+## 8. Repository layout
 
 ```
 xte-dcdu/
@@ -486,7 +570,7 @@ xte-dcdu/
 └── README.md
 ```
 
-## 8. Known limitations / future work
+## 9. Known limitations / future work
 
 - v1.0 supports a single `[aircraft]` section. Multi-aircraft via section
   suffixes (`[aircraft.a319]`, `[window.a319]`, …) is reserved for v1.1.
