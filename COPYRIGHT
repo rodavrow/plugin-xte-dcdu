@@ -1,0 +1,35 @@
+XTE-DCDU
+Copyright (C) 2026 David Rowlandson
+
+XTE-DCDU is licensed under the GNU General Public License, version 3.0 or
+later (GPL-3.0-or-later). The full license text is in the file LICENSE
+(also distributed as COPYING) in the root of this source tree, and is
+available online at https://www.gnu.org/licenses/gpl-3.0.txt.
+
+This project incorporates a texture-finding heuristic adapted from
+XTextureExtractor by Wayne Piekarski
+(https://github.com/waynepiekarski/XTextureExtractor),
+Copyright (C) Wayne Piekarski, also licensed under GPL-3.0-or-later.
+See plugin/src/texture_finder.{cpp,hpp} for the file-level attribution
+header.
+
+Firmware third-party components (attribution and upstream license source):
+
+- WiFiManager by tzapu (https://github.com/tzapu/WiFiManager)
+	Used for captive-portal Wi-Fi provisioning in firmware/src/main.cpp.
+	PlatformIO registry metadata reports license: MIT.
+
+- LovyanGFX by lovyan03 (https://github.com/lovyan03/LovyanGFX)
+	Used for the generic SPI display path.
+	PlatformIO registry metadata reports license: MIT AND BSD-2-Clause.
+
+- GFX Library for Arduino by moononournation
+	(https://github.com/moononournation/Arduino_GFX)
+	Used for the JC3248W535 QSPI display path.
+
+- TJpg_Decoder by Bodmer (https://github.com/Bodmer/TJpg_Decoder)
+	Used for JPEG decode on the firmware side.
+
+All third-party components remain under their respective upstream licenses.
+This notice file is informational and does not replace the upstream license
+texts distributed by those projects.

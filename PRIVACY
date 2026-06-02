@@ -1,0 +1,89 @@
+// ---------------------------------------------------------------------
+//
+// XTE-DCDU
+//
+// Copyright (C) 2026 David Rowlandson
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+// ---------------------------------------------------------------------
+
+Privacy policy
+
+This project is open source, released under the GNU General Public
+License version 3 or later (GPL-3.0-or-later).
+
+XTE-DCDU consists of two components: an X-Plane 12 plugin and firmware
+for an ESP32-S3 + LCD device. Neither component captures or uploads any
+personally identifiable information.
+
+Plugin (X-Plane)
+----------------
+- Reads the DCDU region of the ToLiss A320 panel texture from the
+  simulator's GPU and forwards it, frame-by-frame, over a TCP socket
+  on the user's local network to the address configured in
+  `xte-dcdu.cfg`.
+- Reads and writes only its own files inside the plugin directory:
+  `xte-dcdu.cfg` (user configuration) and `xte-dcdu-dump.jpg` (only
+  when the user explicitly triggers the `xtedcdu/dump_frame` command).
+- Writes diagnostic messages (prefixed `XTE-DCDU:`) to X-Plane's
+  local `Log.txt`. No log data leaves the user's machine.
+- Makes no outbound connections to the internet. The only network
+  traffic is the TCP session to the user-specified ESP32 address
+  (or, in server mode, accepting an inbound connection from it) on
+  the user's local network.
+
+Firmware (ESP32-S3)
+-------------------
+- Connects to a Wi-Fi network using SSID and password supplied by the
+  user in `firmware/credentials.ini`. These credentials are flashed
+  into the device only and are never transmitted off-device.
+- Receives DCDU frames over TCP from the plugin and displays them on
+  the attached LCD. Sends button-press events back to the plugin over
+  the same socket.
+- Supports Arduino OTA on the local network for firmware updates
+  initiated by the user.
+- Makes no outbound connections to the internet, contains no
+  telemetry, no analytics, and no remote logging.
+
+No information about the user, the user's flights, or the user's
+machine is visible to the developer or uploaded anywhere. The project
+contains no ads, no tracking, no telemetry, and no third-party
+services. It is truly free in both price and user freedom.
+
+I hope you enjoy this free open source project for your X-Plane flight
+simulator.
+
+David Rowlandson
+
+// ---------------------------------------------------------------------
+//
+// XTE-DCDU
+//
+// Copyright (C) 2026 David Rowlandson
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+// ---------------------------------------------------------------------

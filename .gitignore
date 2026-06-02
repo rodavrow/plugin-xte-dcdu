@@ -1,0 +1,24 @@
+# Build outputs
+plugin/build/
+plugin/out/
+plugin/cmake-build-*/
+firmware/.pio/
+firmware/.pioenvs/
+firmware/.piolibdeps/
+
+# Vendored deps (user-provided; not redistributed)
+plugin/XPLM/CHeaders/
+plugin/XPLM/Libraries/
+plugin/third_party/xxhash/xxhash.h
+
+# Editor / OS
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local overrides
+plugin/xte-dcdu.cfg
+xte-dcdu.cfg
+
+test_sender.py
