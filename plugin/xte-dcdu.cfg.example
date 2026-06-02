@@ -1,0 +1,123 @@
+# xte-dcdu.cfg - configuration for the XTE-DCDU headless plugin
+# INI-style. Lines starting with '#' or ';' are comments. Keys are
+# case-insensitive. Unknown keys are logged but ignored. Reload at
+# runtime with the command `xtedcdu/reload_config`.
+
+[aircraft]
+# ICAO-ish acf basename prefix this config applies to. The plugin only
+# arms itself when the loaded aircraft's .acf filename starts with this
+# prefix (case-insensitive). 'a320' covers ToLiss A320 ceo+neo.
+acf_prefix = a320
+
+# Panel texture dimensions. Used to validate the texture-finding result
+# and to compute the GL Y-axis flip. ToLiss family is 4096x4096.
+panel_width  = 4096
+panel_height = 4096
+
+[window]
+# DCDU rectangle in panel-texture pixel coordinates. Origin = top-left
+# of the panel atlas (matches XTextureExtractor's .tex format).
+# Defaults verified for ToLiss A320 Std Def.
+x1 = 1534
+y1 = 2867
+x2 = 1803
+y2 = 3068
+
+[output]
+# Plugin operates as a TCP client, connecting to the ESP32.
+# Set mode = server to invert (plugin listens, ESP32 connects). Useful
+# for testing with `nc` or for multi-listener setups.
+mode = client
+
+# When mode = client:
+esp32_host = 192.168.1.50
+esp32_port = 4711
+
+# When mode = server:
+listen_host = 0.0.0.0
+listen_port = 52501
+
+# Reconnect backoff (client mode). start_ms grows by *factor up to max_ms.
+reconnect_start_ms = 1000
+reconnect_max_ms   = 30000
+reconnect_factor   = 2.0
+
+[encoding]
+# JPEG quality 1..100. 75 is a good default for the small DCDU; the LCD
+# font is mostly green-on-black so JPEG handles it well.
+jpeg_quality = 75
+
+# Heartbeat interval in milliseconds. A heartbeat frame (18 bytes,
+# type=0x02, no payload) is sent if no image frame has been sent in
+# this interval, so the ESP32 can detect a dead link.
+heartbeat_ms = 2000
+
+# Minimum interval between change-frame sends (rate limit). Prevents
+# flooding during transient texture churn. 100 ms = 10 Hz max.
+min_send_interval_ms = 100
+
+[readback]
+# Pixel buffer object pool size. 2 = ping-pong (recommended). 1 =
+# synchronous fallback (will stall the render thread once per frame).
+pbo_count = 2
+
+# Flight loop callback period (seconds). Upper bound on how often we
+# re-evaluate texture lock / housekeeping; the actual readback runs in
+# the draw callback at the simulator's framerate.
+flight_loop_interval = 0.05
+
+# Workaround for XTextureExtractor Issue #26 (Linux/NVIDIA). On affected
+# systems the first matching texture id is wrong; bump this above the
+# bad id and re-run. 0 = scan from the beginning.
+start_texture_id = 0
+
+# Upper bound for brute-force GL texture ID scanning. Increase this if
+# your sim build places panel textures at high IDs (e.g. 5000+).
+texture_scan_max_id = 10000
+
+[logging]
+# verbose | normal | quiet
+level = normal
+
+# =============================================================================
+# Button mapping  (optional — omit any [button.N] section to leave unmapped)
+# =============================================================================
+#
+# The ESP32 hardware has 11 push-buttons (indices 0–10). Each button can be
+# mapped to either an X-Plane command or a writable numeric dataref. When the
+# plugin receives a button event from the ESP32 it dispatches the action on
+# the X-Plane main thread (inside the flight-loop callback).
+#
+# type = command
+#   fire the named X-Plane command on button press; release is ignored.
+#
+# type = dataref
+#   write value_press (default 1.0) to the named dataref on press.
+#   write value_release (default 0.0) on release if send_release = true.
+#   Supports xplmType_Int and xplmType_Float datarefs.
+#
+# type = none  (or omit the section entirely)
+#   button ignored.
+#
+# All dataref and command names are looked up at first use and cached.
+# Use xtedcdu/reload_config to pick up changes without restarting X-Plane.
+#
+# Example A — map button 0 to the DCDU send-message command:
+# [button.0]
+# type    = command
+# command = AirbusFBW/DCDU_MSG_Btn_Side_Left
+#
+# Example B — map button 1 to toggle a pushbutton dataref (like MobiFlight):
+# [button.1]
+# type          = dataref
+# dataref       = AirbusFBW/PushButton/DCDULeftSide
+# value_press   = 1
+# value_release = 0
+# send_release  = true
+#
+# Example C — momentary dataref, no release write:
+# [button.2]
+# type         = dataref
+# dataref      = AirbusFBW/DCDU_ClearMsg_Capt
+# value_press  = 1
+# send_release = false

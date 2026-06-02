@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  firmware:
+    name: Build firmware
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Provide credentials.ini stub
+        working-directory: firmware
+        run: |
+          if [ ! -f credentials.ini ]; then
+            cp credentials.ini.example credentials.ini
+          fi
+
+      - name: Build firmware
+        working-directory: firmware
+        run: pio run
+
+      - name: Stage firmware artifact
+        run: |
+          mkdir -p dist
+          # Grab the first firmware.bin produced (adjust if you have multiple envs)
+          BIN=$(find firmware/.pio/build -name firmware.bin | head -n1)
+          cp "$BIN" "dist/xte-dcdu-firmware-${GITHUB_REF_NAME}.bin"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: dist/*
+
+  plugin-windows:
+    name: Build plugin (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S plugin -B plugin/build -A x64
+
+      - name: Build
+        run: cmake --build plugin/build --config Release
+
+      - name: Stage plugin artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item plugin\build\Release\win.xpl "dist/xte-dcdu-win-${env:GITHUB_REF_NAME}.xpl"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin-windows
+          path: dist/*
+
+  release:
+    name: Publish GitHub Release
+    needs: [firmware, plugin-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p out
+          find dist -type f -exec cp {} out/ \;
+          ls -la out
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

@@ -1,0 +1,35 @@
+{
+    "version": 4,
+    "configurations": [
+        {
+            "name": "Win32",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "includePath": [
+                "${workspaceFolder}/plugin/src",
+                "${workspaceFolder}/plugin/XPLM/CHeaders/XPLM",
+                "${workspaceFolder}/plugin/XPLM/CHeaders/Widgets",
+                "${workspaceFolder}/plugin/XPLM/CHeaders/Wrappers",
+                "${workspaceFolder}/plugin/third_party/xxhash",
+                "${workspaceFolder}/plugin/build/turbo_install/include"
+            ],
+            "defines": [
+                "IBM=1",
+                "APL=0",
+                "LIN=0",
+                "XPLM200=1",
+                "XPLM210=1",
+                "XPLM300=1",
+                "XPLM301=1",
+                "XPLM303=1",
+                "_CRT_SECURE_NO_WARNINGS",
+                "WIN32",
+                "_WINDOWS",
+                "NOMINMAX",
+                "XTE_DCDU_VERSION=\"0.1.0\""
+            ]
+        }
+    ]
+}
