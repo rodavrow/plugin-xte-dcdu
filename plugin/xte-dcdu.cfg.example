@@ -121,3 +121,34 @@ level = normal
 # dataref      = AirbusFBW/DCDU_ClearMsg_Capt
 # value_press  = 1
 # send_release = false
+[button.0]
+type    = command
+command = AirbusFBW/CPDLC1/PageMinus
+
+[button.1]
+type    = command
+command = AirbusFBW/CPDLC1/PagePlus
+
+[button.2]
+type    = command
+command = AirbusFBW/CPDLC1/LSK1R
+
+[button.3]
+type    = command
+command = AirbusFBW/CPDLC1/LSK2R
+
+[button.4]
+type    = command
+command = AirbusFBW/CPDLC1/LSK2L
+
+[button.5]
+type    = command
+command = AirbusFBW/CPDLC1/LSK1L
+
+[button.6]
+type    = command
+command = AirbusFBW/CPDLC1/MessagePlus
+
+[button.7]
+type    = command
+command = AirbusFBW/CPDLC1/MessageMinus
