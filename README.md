@@ -72,7 +72,104 @@ top-level license remains GPL-3.0-or-later for XTE-DCDU project code.
 
 ---
 
+## Quick install (pre-compiled)
+
+> **Just want to run XTE-DCDU?** Download the pre-compiled release — no
+> compiler or toolchain required.
+
+Head to the
+[**Releases page**](https://github.com/rodavrow/plugin-xte-dcdu/releases/latest)
+and download the assets for the latest version.
+
+### Installing the plugin (Windows)
+
+1. Download `win.xpl` and `xte-dcdu.cfg.example` from the release.
+2. Create the plugin folder in your X-Plane 12 install (if it does not already
+   exist) and copy the files in:
+   ```
+   X-Plane 12/Resources/plugins/Plugin-XTE-DCDU/
+   ├── 64/
+   │   └── win.xpl
+   └── xte-dcdu.cfg        ← rename from xte-dcdu.cfg.example, then edit
+   ```
+3. Edit `xte-dcdu.cfg`. At minimum set `esp32_host` (under `[output]`) to the
+   IP address shown on the ESP32 display after it connects to your network.
+4. Start X-Plane 12. The plugin logs `XTE-DCDU:` lines to `Log.txt` and
+   appears under the **Plugins** menu.
+
+> Linux and macOS builds are not currently included in the release; see
+> [Building the plugin](#1-building-the-plugin) to compile for those platforms.
+
+### Flashing the firmware (JC3248W535C)
+
+1. Download `firmware-jc3248w535.bin` from the release.
+2. Connect the board to your PC via USB-C.
+3. Install `esptool` and flash the binary:
+
+   ```bash
+   pip install esptool
+   esptool.py --chip esp32s3 --port <PORT> write_flash 0x0 firmware-jc3248w535.bin
+   ```
+
+   Replace `<PORT>` with your board's serial port:
+   - **Windows** — `COM3` (check Device Manager for the exact number)
+   - **Linux** — `/dev/ttyUSB0` or `/dev/ttyACM0`
+   - **macOS** — `/dev/cu.usbserial-*`
+
+4. On first boot the display shows the Wi-Fi setup screen. Follow the
+   [captive portal steps](#configure-wifi) to connect the device to your
+   network. The display shows the assigned IP address once connected.
+5. Set `esp32_host` in `xte-dcdu.cfg` to that IP address.
+
+---
+
+## Contributing
+
+Contributions — bug fixes, new board support, improvements — are welcome.
+Please follow the standard GitHub fork-and-PR workflow:
+
+1. **Open an issue first** for any non-trivial change so the approach can be
+   agreed before you write code.
+
+2. **Fork** the repository and clone your fork locally:
+   ```bash
+   git clone https://github.com/<your-username>/plugin-xte-dcdu.git
+   cd plugin-xte-dcdu
+   git remote add upstream https://github.com/rodavrow/plugin-xte-dcdu.git
+   ```
+
+3. **Create a branch** from `main` with a descriptive prefix:
+   ```bash
+   git checkout -b fix/tcp-reconnect-on-drop   # or feat/ or docs/
+   ```
+
+4. Make and test your changes. Changes to the wire protocol (Section 4) must
+   include matching updates on both the plugin and firmware sides.
+
+5. **Commit** with a clear message; one logical change per commit:
+   ```bash
+   git commit -m "fix: correct TCP reconnect when client drops"
+   ```
+
+6. **Rebase** against upstream `main` before opening a PR:
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
+
+7. **Push** your branch and **open a pull request** against `main`:
+   ```bash
+   git push origin fix/tcp-reconnect-on-drop
+   ```
+   Describe *what* changed, *why*, and how you tested it.
+
+---
+
 ## 1. Building the plugin
+
+> **For developers and contributors only.** If you just want to run
+> XTE-DCDU, download the pre-built release instead — see
+> [Quick install](#quick-install-pre-compiled) above.
 
 ### Prerequisites
 
@@ -134,6 +231,10 @@ same.
 ---
 
 ## 2. Building / flashing the firmware
+
+> **For developers and contributors only.** To flash a pre-built firmware
+> binary without installing PlatformIO, see
+> [Flashing the firmware](#flashing-the-firmware-jc3248w535c) above.
 
 The firmware targets the **Guition JC3248W535C** all-in-one board by
 default: ESP32-S3-N16R8 + AXS15231B 3.5" 320×480 QSPI capacitive touch

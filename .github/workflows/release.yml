@@ -9,8 +9,12 @@ permissions:
   contents: write
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Build the ESP32-S3 firmware for JC3248W535C and produce a merged binary
+  # that can be flashed in a single esptool command (write_flash 0x0 ...).
+  # ---------------------------------------------------------------------------
   firmware:
-    name: Build firmware
+    name: Build firmware (JC3248W535C)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,8 +23,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install PlatformIO
-        run: pip install --upgrade platformio
+      - name: Install PlatformIO and esptool
+        run: pip install --upgrade platformio esptool
 
       - name: Provide credentials.ini stub
         working-directory: firmware
@@ -31,25 +35,51 @@ jobs:
 
       - name: Build firmware
         working-directory: firmware
-        run: pio run
+        run: pio run -e jc3248w535
 
-      - name: Stage firmware artifact
+      - name: Create merged binary
         run: |
           mkdir -p dist
-          # Grab the first firmware.bin produced (adjust if you have multiple envs)
-          BIN=$(find firmware/.pio/build -name firmware.bin | head -n1)
-          cp "$BIN" "dist/xte-dcdu-firmware-${GITHUB_REF_NAME}.bin"
+          esptool.py --chip esp32s3 merge_bin \
+            --output dist/firmware-jc3248w535.bin \
+            0x0     firmware/.pio/build/jc3248w535/bootloader.bin \
+            0x8000  firmware/.pio/build/jc3248w535/partitions.bin \
+            0x10000 firmware/.pio/build/jc3248w535/firmware.bin
 
       - uses: actions/upload-artifact@v4
         with:
           name: firmware
           path: dist/*
 
+  # ---------------------------------------------------------------------------
+  # Build the Windows X-Plane plugin (win.xpl).
+  # The X-Plane SDK and xxhash are git-ignored and fetched here at build time.
+  # ---------------------------------------------------------------------------
   plugin-windows:
     name: Build plugin (Windows)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download X-Plane SDK
+        shell: pwsh
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://developer.x-plane.com/wp-content/plugins/code-sample-generation/sdk_zip_files/XPSDK430.zip" `
+            -OutFile XPSDK.zip `
+            -UserAgent "Mozilla/5.0"
+          Expand-Archive XPSDK.zip -DestinationPath xpsdk
+          # SDK zip places files at root or under an 'SDK/' subfolder depending on version
+          $root = if (Test-Path xpsdk/CHeaders) { "xpsdk" } else { "xpsdk/SDK" }
+          Copy-Item -Recurse "$root/CHeaders" plugin/XPLM/CHeaders -Force
+          Copy-Item -Recurse "$root/Libraries" plugin/XPLM/Libraries -Force
+
+      - name: Download xxhash
+        shell: pwsh
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/Cyan4973/xxHash/dev/xxhash.h" `
+            -OutFile plugin/third_party/xxhash/xxhash.h
 
       - name: Configure
         run: cmake -S plugin -B plugin/build -A x64
@@ -61,26 +91,32 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item plugin\build\Release\win.xpl "dist/xte-dcdu-win-${env:GITHUB_REF_NAME}.xpl"
+          Copy-Item plugin\build\Release\win.xpl dist\win.xpl
 
       - uses: actions/upload-artifact@v4
         with:
           name: plugin-windows
           path: dist/*
 
+  # ---------------------------------------------------------------------------
+  # Assemble and publish the GitHub release.
+  # ---------------------------------------------------------------------------
   release:
     name: Publish GitHub Release
     needs: [firmware, plugin-windows]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
 
-      - name: Flatten artifacts
+      - name: Flatten artifacts and add config example
         run: |
           mkdir -p out
           find dist -type f -exec cp {} out/ \;
+          cp plugin/xte-dcdu.cfg.example out/xte-dcdu.cfg.example
           ls -la out
 
       - name: Create release
