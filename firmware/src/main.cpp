@@ -38,9 +38,7 @@ static Arduino_DataBus* g_bus = new Arduino_ESP32QSPI(
 static Arduino_GFX* g_panel = new Arduino_AXS15231B(
     g_bus, GFX_NOT_DEFINED /* RST */, 0 /* rotation */, false /* IPS */,
     320 /* width */, 480 /* height */,
-    0 /* col_off1 */, 0 /* row_off1 */, 0 /* col_off2 */, 0 /* row_off2 */,
-    axs15231b_init_operations,
-    sizeof(axs15231b_init_operations));
+    0 /* col_off1 */, 0 /* row_off1 */, 0 /* col_off2 */, 0 /* row_off2 */);
 
 // The AXS15231B over QSPI does NOT cope with arbitrary partial CASET/RASET
 // writes (the vendor ESP-IDF driver intentionally skips RASET in QSPI mode
