@@ -35,15 +35,12 @@ static Arduino_DataBus* g_bus = new Arduino_ESP32QSPI(
     45 /* CS */, 47 /* SCK */, 21 /* D0 */, 48 /* D1 */, 40 /* D2 */, 39 /* D3 */);
 
 // Underlying AXS15231B panel: native 320(W) x 480(H) portrait.
-// Pass the 320x480 init ops explicitly — the Arduino_AXS15231B default is the
-// 180x640 panel's init sequence, which on the 320x480 hardware produces a
-// half-initialised display (grey screen, tiny corner artefact).
 static Arduino_GFX* g_panel = new Arduino_AXS15231B(
     g_bus, GFX_NOT_DEFINED /* RST */, 0 /* rotation */, false /* IPS */,
     320 /* width */, 480 /* height */,
     0 /* col_off1 */, 0 /* row_off1 */, 0 /* col_off2 */, 0 /* row_off2 */,
-    axs15231b_320480_type1_init_operations,
-    sizeof(axs15231b_320480_type1_init_operations));
+    axs15231b_init_operations,
+    sizeof(axs15231b_init_operations));
 
 // The AXS15231B over QSPI does NOT cope with arbitrary partial CASET/RASET
 // writes (the vendor ESP-IDF driver intentionally skips RASET in QSPI mode
